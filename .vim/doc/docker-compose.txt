@@ -1,0 +1,728 @@
+*docker-compose.txt*                 Docker Compose Offline Reference
+
+==============================================================================
+DOCKER COMPOSE                                      *compose*
+
+Docker Compose описывает многоконтейнерное приложение в YAML.
+
+Основные верхнеуровневые элементы:
+
+|compose-services|
+|compose-networks|
+|compose-volumes|
+|compose-configs|
+|compose-secrets|
+|compose-name|
+
+
+==============================================================================
+SERVICES                                      *compose-services*
+
+services определяет контейнеры приложения.
+
+>
+    services:
+      web:
+        image: nginx:latest
+
+      database:
+        image: postgres:17
+<
+
+Каждый ключ внутри services является именем сервиса.
+
+Часто используемые параметры сервиса:
+
+|compose-image|
+|compose-build|
+|compose-command|
+|compose-entrypoint|
+|compose-ports|
+|compose-expose|
+|compose-environment|
+|compose-env_file|
+|compose-volumes|
+|compose-networks|
+|compose-depends_on|
+|compose-restart|
+|compose-healthcheck|
+|compose-container_name|
+|compose-hostname|
+|compose-working_dir|
+|compose-user|
+|compose-labels|
+|compose-extra_hosts|
+|compose-dns|
+|compose-stdin_open|
+|compose-tty|
+
+
+==============================================================================
+IMAGE                                            *compose-image*
+
+Определяет image, из которого запускается контейнер.
+
+>
+    services:
+      web:
+        image: nginx:1.27
+<
+
+Можно использовать registry:
+
+>
+    image: registry.example.com/team/application:1.4
+<
+
+Если одновременно присутствует |compose-build|, поведение также зависит
+от настроек сборки/pull.
+
+
+==============================================================================
+BUILD                                            *compose-build*
+
+Описывает сборку container image.
+
+Короткая форма:
+
+>
+    services:
+      app:
+        build: .
+<
+
+Расширенная:
+
+>
+    services:
+      app:
+        build:
+          context: .
+          dockerfile: Dockerfile
+          args:
+            APP_ENV: production
+<
+
+Основные параметры:
+
+    context
+        Build context.
+
+    dockerfile
+        Используемый Dockerfile.
+
+    args
+        Build arguments.
+
+
+==============================================================================
+PORTS                                            *compose-ports*
+
+Публикует порты контейнера на хосте.
+
+Короткая форма:
+
+>
+    services:
+      web:
+        ports:
+          - "8080:80"
+<
+
+Здесь:
+
+    8080    host port
+    80      container port
+
+Общий вид:
+
+    [HOST_IP:]HOST_PORT:CONTAINER_PORT[/PROTOCOL]
+
+Примеры:
+
+>
+    ports:
+      - "8080:80"
+      - "127.0.0.1:8080:80"
+      - "8080:80/tcp"
+      - "5353:53/udp"
+<
+
+Рекомендуется заключать значения HOST:CONTAINER в кавычки, чтобы YAML
+не интерпретировал значение неожиданным образом.
+
+См. также:
+
+|compose-expose|
+
+
+==============================================================================
+EXPOSE                                          *compose-expose*
+
+Объявляет порты контейнера без публикации host port.
+
+>
+    services:
+      app:
+        expose:
+          - "8080"
+<
+
+В отличие от |compose-ports|, expose сам по себе не создаёт публикацию
+порта на интерфейсе хоста.
+
+
+==============================================================================
+ENVIRONMENT                                *compose-environment*
+
+Передаёт environment variables контейнеру.
+
+Map syntax:
+
+>
+    services:
+      app:
+        environment:
+          LOG_LEVEL: info
+          DEBUG: "false"
+<
+
+List syntax:
+
+>
+    environment:
+      - LOG_LEVEL=info
+      - DEBUG=false
+<
+
+Для секретов лучше рассмотреть |compose-secrets|.
+
+
+==============================================================================
+ENV_FILE                                      *compose-env_file*
+
+Загружает environment variables из файла.
+
+>
+    services:
+      app:
+        env_file:
+          - .env
+<
+
+Можно указать несколько файлов:
+
+>
+    env_file:
+      - default.env
+      - production.env
+<
+
+Не следует путать env_file с .env, используемым Compose для
+интерполяции переменных в Compose-файле.
+
+
+==============================================================================
+VOLUMES                                        *compose-volumes*
+
+На уровне сервиса volumes подключает storage/path внутрь контейнера.
+
+Bind mount:
+
+>
+    services:
+      web:
+        volumes:
+          - ./config:/etc/application
+<
+
+Named volume:
+
+>
+    services:
+      database:
+        volumes:
+          - database-data:/var/lib/database
+
+    volumes:
+      database-data:
+<
+
+Можно сделать mount read-only:
+
+>
+    volumes:
+      - ./config:/etc/application:ro
+<
+
+
+==============================================================================
+NETWORKS                                      *compose-networks*
+
+Подключает сервис к сетям Compose.
+
+>
+    services:
+      web:
+        networks:
+          - frontend
+
+      database:
+        networks:
+          - backend
+
+    networks:
+      frontend:
+      backend:
+<
+
+Один сервис может находиться в нескольких сетях.
+
+
+==============================================================================
+DEPENDS_ON                                  *compose-depends_on*
+
+Описывает зависимости между сервисами.
+
+Короткая форма:
+
+>
+    services:
+      web:
+        depends_on:
+          - database
+<
+
+Она задаёт порядок зависимостей, но сама по себе не означает, что
+приложение внутри зависимого контейнера уже готово принимать запросы.
+
+Для проверки готовности обычно используется |compose-healthcheck|.
+
+
+==============================================================================
+HEALTHCHECK                                *compose-healthcheck*
+
+Настраивает проверку состояния контейнера.
+
+>
+    services:
+      web:
+        healthcheck:
+          test: ["CMD", "curl", "-f", "http://localhost/"]
+          interval: 30s
+          timeout: 10s
+          retries: 3
+          start_period: 10s
+<
+
+Основные параметры:
+
+    test
+    interval
+    timeout
+    retries
+    start_period
+
+
+==============================================================================
+RESTART                                        *compose-restart*
+
+Restart policy контейнера.
+
+Пример:
+
+>
+    services:
+      web:
+        restart: unless-stopped
+<
+
+Часто встречаются:
+
+    no
+    always
+    on-failure
+    unless-stopped
+
+
+==============================================================================
+COMMAND                                        *compose-command*
+
+Переопределяет команду image.
+
+>
+    services:
+      app:
+        command: ["./application", "--production"]
+<
+
+См. также:
+
+|compose-entrypoint|
+
+
+==============================================================================
+ENTRYPOINT                                  *compose-entrypoint*
+
+Переопределяет ENTRYPOINT image.
+
+>
+    services:
+      app:
+        entrypoint: ["/entrypoint.sh"]
+<
+
+
+==============================================================================
+CONTAINER_NAME                          *compose-container_name*
+
+Задаёт явное имя контейнера.
+
+>
+    services:
+      web:
+        container_name: my-web
+<
+
+Обычно Compose самостоятельно генерирует имена контейнеров, поэтому
+явный container_name требуется не всегда.
+
+
+==============================================================================
+HOSTNAME                                      *compose-hostname*
+
+Устанавливает hostname контейнера.
+
+>
+    services:
+      app:
+        hostname: application
+<
+
+
+==============================================================================
+WORKING_DIR                                *compose-working_dir*
+
+Переопределяет рабочую директорию процесса.
+
+>
+    services:
+      app:
+        working_dir: /application
+<
+
+
+==============================================================================
+USER                                                *compose-user*
+
+Переопределяет пользователя процесса контейнера.
+
+>
+    services:
+      app:
+        user: "1000:1000"
+<
+
+
+==============================================================================
+LABELS                                            *compose-labels*
+
+Добавляет labels контейнеру.
+
+>
+    services:
+      web:
+        labels:
+          environment: production
+          application: frontend
+<
+
+
+==============================================================================
+EXTRA_HOSTS                                  *compose-extra_hosts*
+
+Добавляет hostname mappings в контейнер.
+
+>
+    services:
+      app:
+        extra_hosts:
+          - "internal.example:10.10.10.10"
+<
+
+
+==============================================================================
+DNS                                                  *compose-dns*
+
+Настраивает DNS servers контейнера.
+
+>
+    services:
+      app:
+        dns:
+          - 10.0.0.53
+          - 10.0.0.54
+<
+
+
+==============================================================================
+TTY                                                  *compose-tty*
+
+Выделяет pseudo-TTY.
+
+>
+    services:
+      shell:
+        tty: true
+<
+
+
+==============================================================================
+STDIN_OPEN                                    *compose-stdin_open*
+
+Оставляет stdin контейнера открытым.
+
+>
+    services:
+      shell:
+        stdin_open: true
+        tty: true
+<
+
+
+==============================================================================
+CONFIGS                                          *compose-configs*
+
+Позволяет передавать configuration data сервисам.
+
+>
+    services:
+      app:
+        configs:
+          - source: app_config
+            target: /etc/app/config.yaml
+
+    configs:
+      app_config:
+        file: ./config.yaml
+<
+
+
+==============================================================================
+SECRETS                                          *compose-secrets*
+
+Предоставляет сервисам secrets.
+
+>
+    services:
+      app:
+        secrets:
+          - db_password
+
+    secrets:
+      db_password:
+        file: ./db_password.txt
+<
+
+Приложение обычно получает secret как файл внутри контейнера.
+
+
+==============================================================================
+NAME                                                *compose-name*
+
+Задаёт имя Compose project.
+
+>
+    name: my-project
+
+    services:
+      web:
+        image: nginx
+<
+
+
+==============================================================================
+PROFILES                                        *compose-profiles*
+
+Позволяет включать сервис только для определённых profiles.
+
+>
+    services:
+      debug:
+        image: debug-tools
+        profiles:
+          - debug
+<
+
+
+==============================================================================
+PLATFORM                                        *compose-platform*
+
+Определяет target platform сервиса.
+
+>
+    services:
+      app:
+        platform: linux/amd64
+<
+
+
+==============================================================================
+PRIVILEGED                                    *compose-privileged*
+
+Запускает контейнер в privileged режиме.
+
+>
+    services:
+      app:
+        privileged: true
+<
+
+Это существенно расширяет возможности контейнера относительно host.
+Использовать следует только когда это действительно требуется.
+
+
+==============================================================================
+READ_ONLY                                      *compose-read_only*
+
+Делает root filesystem контейнера read-only.
+
+>
+    services:
+      app:
+        read_only: true
+<
+
+
+==============================================================================
+CAP_ADD                                          *compose-cap_add*
+CAP_DROP                                        *compose-cap_drop*
+
+Изменяет Linux capabilities контейнера.
+
+>
+    services:
+      app:
+        cap_drop:
+          - ALL
+        cap_add:
+          - NET_BIND_SERVICE
+<
+
+
+==============================================================================
+SECURITY_OPT                                *compose-security_opt*
+
+Передаёт security options container runtime.
+
+>
+    services:
+      app:
+        security_opt:
+          - no-new-privileges:true
+<
+
+
+==============================================================================
+STOP_GRACE_PERIOD                      *compose-stop_grace_period*
+
+Определяет время ожидания graceful shutdown перед принудительной
+остановкой контейнера.
+
+>
+    services:
+      app:
+        stop_grace_period: 30s
+<
+
+
+==============================================================================
+LOGGING                                          *compose-logging*
+
+Настраивает logging driver.
+
+>
+    services:
+      app:
+        logging:
+          driver: json-file
+          options:
+            max-size: "10m"
+            max-file: "3"
+<
+
+
+==============================================================================
+DEVICE                                           *compose-devices*
+
+Передаёт устройства host внутрь контейнера.
+
+>
+    services:
+      app:
+        devices:
+          - "/dev/example:/dev/example"
+<
+
+
+==============================================================================
+TMPFS                                              *compose-tmpfs*
+
+Подключает tmpfs filesystem.
+
+>
+    services:
+      app:
+        tmpfs:
+          - /tmp
+<
+
+
+==============================================================================
+DOCKER COMPOSE QUICK REFERENCE              *compose-quick-reference*
+
+Минимальный пример:
+
+>
+    services:
+
+      web:
+        image: nginx:1.27
+        ports:
+          - "8080:80"
+
+        depends_on:
+          - app
+
+      app:
+        build: .
+        environment:
+          DATABASE_HOST: database
+
+        depends_on:
+          - database
+
+      database:
+        image: postgres
+        volumes:
+          - database-data:/var/lib/postgresql/data
+
+    volumes:
+      database-data:
+<
+
+Навигация:
+
+    |compose-services|
+    |compose-image|
+    |compose-build|
+    |compose-ports|
+    |compose-environment|
+    |compose-volumes|
+    |compose-networks|
+    |compose-depends_on|
+    |compose-healthcheck|
+    |compose-secrets|
+
+
+vim:tw=78:ts=8:noet:ft=help:norl:
