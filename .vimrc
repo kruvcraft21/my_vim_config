@@ -29,8 +29,10 @@ set laststatus=2
 set wildmenu
 set ruler
 
-" Не переносить длинные строки
+" Меняем работу с шириной текста
 set nowrap
+set textwidth=80
+set colorcolumn=80
 
 " Удобное разделение окон
 set splitbelow
