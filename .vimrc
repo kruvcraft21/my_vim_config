@@ -52,15 +52,6 @@ nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
 nnoremap <C-l> <C-w>l
 
-" YAML — особенно важно для Ansible/Kubernetes
-autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
-
-" Python обычно использует 4 пробела
-autocmd FileType python setlocal ts=4 sts=4 sw=4 expandtab
-
-" Bash/Shell
-autocmd FileType sh setlocal ts=2 sts=2 sw=2 expandtab
-
 " K -> открыть документацию слова под курсором
 function! DevOpsHelp(prefix)
     let l:word = expand('<cword>')
@@ -77,8 +68,6 @@ endfunction
 
 nnoremap KC :call DevOpsHelp('compose')<CR>
 
-autocmd FileType yaml setlocal dictionary+=~/.vim/dict/docker-compose.txt
-
 set statusline=
 set statusline+=\ %f
 set statusline+=\ %m
@@ -88,5 +77,18 @@ set statusline+=\ %y
 set statusline+=\ %l:%c
 set statusline+=\ %p%%
 
+nnoremap <silent> <F2> :10split ~/.vim/.vim_cheat.vim<CR>
+
 autocmd BufRead,BufNewFile *.osj setfiletype opensearch
 autocmd FileType opensearch setlocal ts=2 sw=2 sts=2 expandtab commentstring=#\ %s
+
+" YAML — особенно важно для Ansible/Kubernetes
+autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab
+autocmd FileType yaml setlocal dictionary+=~/.vim/dict/docker-compose.txt
+
+" Python обычно использует 4 пробела
+autocmd FileType python setlocal ts=4 sts=4 sw=4 expandtab
+
+" Bash/Shell
+autocmd FileType sh setlocal ts=2 sts=2 sw=2 expandtab
+
