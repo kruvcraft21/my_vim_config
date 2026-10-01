@@ -44,3 +44,11 @@ set et
 set noexpandtab
 set noet
 
+" Поиск с игнором регистра
+set ignorecase
+" Или 
+set ic
+" Для отключения
+set noic
+" Если в моменте, тогда надо поставить \c
+/word_search\c
