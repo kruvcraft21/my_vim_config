@@ -4,10 +4,29 @@ if exists("b:current_syntax")
 finish
 endif
 
-" Сначала стандартный JSON
+" Painless syntax based on Java
+syntax include @Painless syntax/java.vim
+unlet! b:current_syntax
+
+" JSON syntax
 runtime! syntax/json.vim
 unlet! b:current_syntax
 
+" Painless multiline code: """ ... """
+syntax region opensearchPainless
+      \ matchgroup=String
+      \ start=/"""/
+      \ end=/"""/
+      \ keepend
+      \ contains=@Painless,opensearchPainlessString
+
+" Painless strings: 'text'
+syntax match opensearchPainlessString
+      \ /'[^']*'/
+      \ contained
+      \ containedin=opensearchPainless,@Painless
+
+highlight default link opensearchPainlessString String
 
 " OpenSearch request:
 "
